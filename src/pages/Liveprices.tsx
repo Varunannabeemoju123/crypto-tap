@@ -21,16 +21,40 @@ const LivePrices = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const cryptoIds = ["bitcoin", "ethereum", "matic-network", "tether", "usd-coin", "binancecoin", "solana"];
+  const cryptoIds = ["BTC","ETH","MATIC","USDT","USDC","BNB","SOL"];
 
   const fetchPrices = async () => {
     try {
       setLoading(true);
+
       const response = await axios.get(
-        `https://api.coingecko.com/api/v3/coins/markets?vs_currency=inr&ids=${cryptoIds.join(',')}&order=market_cap_desc&per_page=10&page=1&sparkline=false`
+        "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest",
+        {
+          headers: {
+            "X-CMC_PRO_API_KEY": "73040ea497054e4ca4d279ad9233bbe1"
+          },
+          params: {
+            symbol: cryptoIds.join(","),
+            convert: "INR"
+          }
+        }
       );
-      setPrices(response.data);
+
+      const data = response.data.data;
+
+      const formattedData: CryptoPrice[] = Object.values(data).map((coin: any) => ({
+        id: coin.id.toString(),
+        symbol: coin.symbol,
+        name: coin.name,
+        current_price: coin.quote.INR.price,
+        price_change_percentage_24h: coin.quote.INR.percent_change_24h,
+        market_cap: coin.quote.INR.market_cap,
+        image: `https://cryptoicons.org/api/icon/${coin.symbol.toLowerCase()}/200`
+      }));
+
+      setPrices(formattedData);
       setLastUpdated(new Date());
+
     } catch (error) {
       console.error("Error fetching crypto prices:", error);
     } finally {
@@ -41,7 +65,6 @@ const LivePrices = () => {
   useEffect(() => {
     fetchPrices();
     
-    // Auto refresh every 30 seconds
     const interval = setInterval(fetchPrices, 30000);
     
     return () => clearInterval(interval);
@@ -98,7 +121,6 @@ const LivePrices = () => {
           </Button>
         </motion.div>
 
-        {/* Last Updated Info */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -120,10 +142,8 @@ const LivePrices = () => {
           </Card>
         </motion.div>
 
-        {/* Price Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            // Loading skeleton
             Array.from({ length: 6 }).map((_, index) => (
               <motion.div
                 key={index}
@@ -212,7 +232,6 @@ const LivePrices = () => {
           )}
         </div>
 
-        {/* Auto-refresh Notice */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -220,7 +239,7 @@ const LivePrices = () => {
           className="mt-8 text-center"
         >
           <p className="text-sm text-muted-foreground">
-            Prices update automatically every 30 seconds • Data provided by CoinGecko
+            Prices update automatically every 30 seconds
           </p>
         </motion.div>
       </div>
